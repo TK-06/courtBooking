@@ -1,0 +1,25 @@
+/* Ported from the prototype sign-in screen. */
+
+.signin{min-height:100vh;min-height:100dvh;display:grid;grid-template-rows:auto 1fr}
+.si-art{position:relative;overflow:hidden;background-color:var(--btn);background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 1px,transparent 1px 18px);color:var(--on-crimson);display:flex;flex-direction:column;gap:24px;padding-block:28px 30px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+.si-logo{width:112px;height:112px}
+.si-title{font-size:clamp(36px,6.4vw,62px);max-width:13ch;color:var(--on-crimson)}
+.si-sub{color:rgba(251,245,236,.86);max-width:40ch;margin-top:12px;font-size:16px}
+.si-foot{font-size:12px;color:rgba(251,245,236,.7);max-width:46ch}
+.si-court{display:none}
+.si-form-wrap{display:flex;align-items:flex-start;justify-content:center;padding-block:32px 48px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+.si-form{width:100%;max-width:420px;display:flex;flex-direction:column;gap:18px}
+.form{display:flex;flex-direction:column;gap:14px}
+@media (min-width:900px){
+  .signin{grid-template-rows:none;grid-template-columns:1.1fr 1fr}
+  .si-art{padding:48px 56px;justify-content:space-between}
+  .si-logo{width:150px;height:150px}
+  .si-court{display:block;position:absolute;right:48px;bottom:-150px;height:430px;width:auto;opacity:.9}
+  .si-art > *:not(.si-court){position:relative;z-index:1}
+  .si-form-wrap{align-items:center}
+}
+
+
+.si-form select{width:100%;min-height:48px;border-radius:var(--r-s);border:1px solid var(--rule-strong);background:var(--paper-2);padding:12px 14px;font:inherit;color:inherit}
+.si-form select:focus{outline:none;border-color:var(--crimson);box-shadow:0 0 0 3px var(--crimson-tint)}
+.si-form button:disabled{cursor:wait;opacity:.65}

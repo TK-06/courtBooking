@@ -1,0 +1,82 @@
+import { beforeEach, expect, test, vi } from 'vitest'
+import { mount, flushPromises } from '@vue/test-utils'
+import { ref } from 'vue'
+const fake = vi.hoisted(() => ({ signIn:vi.fn(), signUp:vi.fn(), replace:vi.fn() }))
+vi.mock('../../src/lib/supabase.js', () => ({ supabase:{} }))
+vi.mock('../../src/composables/useAuth.js', () => ({ useAuth:() => ({ signIn:fake.signIn, signUp:fake.signUp, error:ref('') }) }))
+vi.mock('vue-router', () => ({ useRouter:() => ({ replace:fake.replace }) }))
+import SignIn from '../../src/views/SignIn.vue'
+beforeEach(() => {
+  vi.clearAllMocks()
+  fake.signIn.mockResolvedValue({ session:{ user:{ id:'a' } } })
+  fake.signUp.mockResolvedValue({ session:{ user:{ id:'u' } } })
+})
+async function fill(w, email='6638012321@student.chula.ac.th') {
+  await w.find('#f-email').setValue(email)
+  await w.find('#f-pass').setValue('password')
+}
+async function createTab(w) {
+  await w.findAll('[role="tab"]')[1].trigger('click')
+  await w.find('#f-name').setValue('Napat Srisuk')
+  await w.find('#f-sid').setValue('6638012321')
+}
+test('sign-in accepts non-Chula admin email and navigates home', async () => {
+  const w = mount(SignIn)
+  await fill(w, 'admin@example.com')
+  await w.find('form').trigger('submit')
+  await flushPromises()
+  expect(fake.signIn).toHaveBeenCalledWith('admin@example.com', 'password')
+  expect(fake.replace).toHaveBeenCalledWith({ name:'home' })
+  expect(w.text()).not.toContain('Prototype shortcuts')
+  w.unmount()
+})
+test('create account restricts email and preserves prototype validation messages', async () => {
+  const w = mount(SignIn)
+  await createTab(w)
+  await fill(w, 'member@example.com')
+  await w.find('form').trigger('submit')
+  expect(w.find('[role="alert"]').text()).toBe('Use your Chula student email, the one ending in @student.chula.ac.th.')
+  expect(fake.signUp).not.toHaveBeenCalled()
+  w.unmount()
+})
+test('program/year options and signup data follow the spec', async () => {
+  const w = mount(SignIn)
+  await createTab(w)
+  await fill(w)
+  expect(w.findAll('#f-program option').map(o => o.text())).toEqual(['ICE','ADME','AERO','NANO','ChPE','Other'])
+  expect(w.findAll('#f-year option').map(o => o.text())).toEqual(['1','2','3','4','5','6'])
+  await w.find('#f-program').setValue('ADME')
+  await w.find('#f-year').setValue('3')
+  expect(w.find('#f-pass').attributes('autocomplete')).toBe('new-password')
+  await w.find('form').trigger('submit')
+  await flushPromises()
+  expect(fake.signUp).toHaveBeenCalledWith({ fullName:'Napat Srisuk', studentId:'6638012321', program:'ADME', year:3, email:'6638012321@student.chula.ac.th', password:'password' })
+  expect(fake.replace).toHaveBeenCalledWith({ name:'home' })
+  w.unmount()
+})
+test('email confirmation shows the requested notice and keeps sign-in visible', async () => {
+  fake.signUp.mockResolvedValue({ session:null })
+  const w = mount(SignIn)
+  await createTab(w)
+  await fill(w)
+  await w.find('form').trigger('submit')
+  await flushPromises()
+  expect(w.find('[role="status"]').text()).toBe('Check your email to confirm your account, then sign in.')
+  expect(fake.replace).not.toHaveBeenCalled()
+  w.unmount()
+})
+test('API errors are visible and repeated submits are blocked while pending', async () => {
+  let reject
+  fake.signIn.mockReturnValue(new Promise((_resolve, fail) => { reject = fail }))
+  const w = mount(SignIn)
+  await fill(w)
+  await w.find('form').trigger('submit')
+  await w.find('form').trigger('submit')
+  expect(fake.signIn).toHaveBeenCalledTimes(1)
+  expect(w.find('[type="submit"]').attributes('disabled')).toBeDefined()
+  reject(new Error('Invalid login credentials'))
+  await flushPromises()
+  expect(w.find('[role="alert"]').text()).toBe('Invalid login credentials')
+  expect(w.find('[type="submit"]').attributes('disabled')).toBeUndefined()
+  w.unmount()
+})

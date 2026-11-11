@@ -1,0 +1,43 @@
+/* Layout: phone-first app shell with a bottom tab bar; 980px+ a left sidebar; 1180px+ two-column home. Flat paper surfaces, hairline rules, small radii. */
+:root{
+  --paper:#F4EDE1;--paper-2:#FBF7F0;--sunk:#ECE3D3;
+  --ink:#2A2426;--ink-2:#5E5457;--ink-3:#857A7B;
+  --rule:rgba(42,36,38,.14);--rule-strong:rgba(42,36,38,.3);
+  --crimson:#801E2B;--crimson-tint:#F1DEDB;--btn:#801E2B;--btn-hover:#6A1924;--on-crimson:#FBF5EC;
+  --camel:#B08A5E;--camel-ink:#7A5C38;--camel-tint:#EEE0C8;
+  --court:#801E2B;--apron:#5F1520;--line:#F6EBDD;
+  --closed:#C3BDB4;--closed-apron:#ABA49B;--closed-line:#EDE8E0;--closed-ink:#6E6762;
+  --ok:#3D6A4A;--ok-tint:#DFE9DC;--warn:#94570F;--warn-tint:#F4E4CC;--danger:#9E2232;--danger-fill:#9E2232;
+  --ball:#D6D06A;--ig-ground:#211E1E;--ig-mark:#F5F2EE;
+  --scrim:rgba(30,20,22,.45);
+  --f-display:"Newsreader","Iowan Old Style",Georgia,serif;
+  --f-label:"Archivo","Arial",sans-serif;
+  --f-body:"IBM Plex Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --ease:cubic-bezier(.2,.8,.2,1);--ease-enter:cubic-bezier(.22,1,.36,1);
+  --r-s:4px;--r-m:6px;--r-l:10px;
+  --side:256px;
+  --logo-full:url("/logo-full.png");
+  --logo-mark:url("/logo-mark.png");
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#171213;--paper-2:#201819;--sunk:#2A2223;
+  --ink:#F0E7DB;--ink-2:#C5B8AC;--ink-3:#968A82;
+  --rule:rgba(240,231,219,.12);--rule-strong:rgba(240,231,219,.26);
+  --crimson:#E07A86;--crimson-tint:#3B1D22;--btn:#962B3A;--btn-hover:#A93545;--on-crimson:#FBF5EC;
+  --camel:#C9A57A;--camel-ink:#D9BA8E;--camel-tint:#32281C;
+  --court:#8A2231;--apron:#4E111B;--line:#EBDDC9;
+  --closed:#4A4442;--closed-apron:#3B3634;--closed-line:#6F6864;--closed-ink:#A89F98;
+  --ok:#93C3A0;--ok-tint:#1E2C22;--warn:#E3AA62;--warn-tint:#352A1B;--danger:#E8838F;--danger-fill:#A8303F;
+  --ball:#BDB75B;--scrim:rgba(0,0,0,.6);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#171213;--paper-2:#201819;--sunk:#2A2223;
+  --ink:#F0E7DB;--ink-2:#C5B8AC;--ink-3:#968A82;
+  --rule:rgba(240,231,219,.12);--rule-strong:rgba(240,231,219,.26);
+  --crimson:#E07A86;--crimson-tint:#3B1D22;--btn:#962B3A;--btn-hover:#A93545;--on-crimson:#FBF5EC;
+  --camel:#C9A57A;--camel-ink:#D9BA8E;--camel-tint:#32281C;
+  --court:#8A2231;--apron:#4E111B;--line:#EBDDC9;
+  --closed:#4A4442;--closed-apron:#3B3634;--closed-line:#6F6864;--closed-ink:#A89F98;
+  --ok:#93C3A0;--ok-tint:#1E2C22;--warn:#E3AA62;--warn-tint:#352A1B;--danger:#E8838F;--danger-fill:#A8303F;
+  --ball:#BDB75B;--scrim:rgba(0,0,0,.6);color-scheme:dark}
+
