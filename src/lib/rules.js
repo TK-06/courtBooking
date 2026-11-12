@@ -1,5 +1,6 @@
 import { addDays, mondayOf, slotInstant, todayIso } from './time.js'
 import { fmtDate, hoursText } from './format.js'
+import { ENGINEERING, programByCode } from './programs.js'
 
 export const CLOSE_HOUR = 22
 export const HOURS = Object.freeze(Array.from({ length:CLOSE_HOUR - 8 }, (_, i) => i + 8))
@@ -35,6 +36,10 @@ export const MESSAGES = Object.freeze({
   mine: 'You already have this hour.',
   nameAndId: 'Enter your full name and your 10-digit student ID.',
   password: 'Your password needs at least 8 characters.',
+  login: 'Enter your 10-digit student ID or your email.',
+  faculty: 'Choose your faculty.',
+  program: 'Choose your program.',
+  emailFormat: 'Enter a valid email address.',
 })
 
 export function msg(key, vars = {}) {
@@ -130,13 +135,35 @@ export function isChulaEmail(raw) {
   return /^[^@\s]+@student\.chula\.ac\.th$/.test(raw.trim().toLowerCase())
 }
 
-export function validateSignUp({ fullName, studentId, email, password, mode }) {
-  // The prototype calls the create-account tab "up"; "signup" is its descriptive alias.
-  if ((mode === 'up' || mode === 'signup') && (!fullName.trim() || !/^\d{10}$/.test(studentId.trim()))) {
-    return msg('nameAndId')
-  }
-  if (!isChulaEmail(email)) return msg('email')
-  if (password.length < 8) return msg('password')
+export const CHULA_DOMAIN = 'student.chula.ac.th'
+
+// The Chula address a 10-digit student ID signs in and signs up with.
+export function chulaEmail(studentId) {
+  return `${studentId}@${CHULA_DOMAIN}`
+}
+
+// One login field: a 10-digit student ID becomes its Chula address, anything with an
+// @ is an email (club admins may use any address), and everything else is not a login.
+export function resolveLoginEmail(raw) {
+  const login = String(raw ?? '').trim()
+  if (/^\d{10}$/.test(login)) return chulaEmail(login)
+  if (login.includes('@')) return login.toLowerCase()
+  return null
+}
+
+const text = value => String(value ?? '').trim()
+
+// Returns the first failing message, or null. With customEmail the address only has to look
+// like an email: the server still decides whether a non-Chula address is allowed (club admins
+// are on an allowlist; everyone else gets MESSAGES.email from the sign-up trigger).
+export function validateSignUp({ fullName, studentId, faculty, program, email, password, customEmail }) {
+  if (!text(fullName) || !/^\d{10}$/.test(text(studentId))) return msg('nameAndId')
+  if (!text(faculty)) return msg('faculty')
+  if (!text(program) || (text(faculty) === ENGINEERING && !programByCode(text(program)))) return msg('program')
+  if (customEmail) {
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(text(email))) return msg('emailFormat')
+  } else if (!isChulaEmail(text(email))) return msg('email')
+  if (String(password ?? '').length < 8) return msg('password')
   return null
 }
 

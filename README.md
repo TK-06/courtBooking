@@ -2,6 +2,8 @@
 
 Court booking and equipment borrowing for Intania Tennis Club at CUB 13, built for the ISE Vue Web Application Integration Assignment. Students book courts, reserve rackets and balls, and view their playing history. Club admins manage bookings, courts, equipment, and the activity log. Dates and hours use Asia/Bangkok (UTC+7).
 
+Live: **https://intania-tennis-club.vercel.app**
+
 ## Stack
 
 - Node.js 22 or newer; npm.
@@ -88,7 +90,7 @@ The site is hosted on Vercel; GitHub Actions only runs CI.
    - `VITE_SUPABASE_ANON_KEY`: the publishable client key.
    Leave `VITE_BASE` unset (the app is served from `/`).
 3. Deploy. Every merge to `main` deploys to production; every pull request gets a preview URL.
-4. In Supabase **Authentication > URL Configuration**, set **Site URL** to the Vercel production URL and add the preview URL pattern (`https://*-<your-vercel-scope>.vercel.app/**`) to **Redirect URLs**.
+4. In Supabase **Authentication > URL Configuration**, set **Site URL** to the Vercel production URL (`https://intania-tennis-club.vercel.app`) and add the preview URL pattern (`https://*-<your-vercel-scope>.vercel.app/**`) to **Redirect URLs**.
 
 Routing uses the URL hash (`/#/home`), so no rewrite rules are needed.
 
@@ -104,4 +106,4 @@ Routing uses the URL hash (`/#/home`), so no rewrite rules are needed.
 - [ ] Screenshot the Supabase `bookings` table with rows.
 - [ ] Screenshot the Supabase `booking_events` table with rows.
 - [ ] Screenshot the Make.com scenario with a successful run.
-- [ ] Check the deployed app on phone and desktop and include its Vercel address with the submission.
+- [ ] Check the deployed app on phone and desktop and include its address (https://intania-tennis-club.vercel.app) with the submission.

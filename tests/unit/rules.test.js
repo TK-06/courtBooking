@@ -3,7 +3,7 @@ import {
   STUDENT_MAX_HOURS, CANCEL_CUTOFF_HOURS, LOAN_AHEAD_DAYS, HEAT_WEEKS,
   MESSAGES, msg, windowEnd, isFree, slotState, dayStatus, toggleSlot,
   statusOf, canCancel, validateAdminCancel, isChulaEmail, validateSignUp,
-  validateLoan, buildHeatMap,
+  resolveLoginEmail, chulaEmail, validateLoan, buildHeatMap,
 } from '../../src/lib/rules.js'
 
 const now = new Date('2026-11-10T06:20:00Z')
@@ -143,17 +143,62 @@ test('message templates substitute all supported variables', () => {
   expect(msg('loanDup', { date:'Thu 12 Nov' })).toBe('You already have equipment reserved for Thu 12 Nov.')
 })
 
-test('signup follows prototype field validation and sign-in skips name and ID', () => {
-  const form = { fullName:' Napat ', studentId:' 6638012321 ', email:' Napat@Student.Chula.ac.th ', password:'12345678', mode:'up' }
+test('login resolves a 10-digit student ID or an email and rejects anything else', () => {
+  expect(resolveLoginEmail('6638012321')).toBe('6638012321@student.chula.ac.th')
+  expect(resolveLoginEmail('  6638012321  ')).toBe('6638012321@student.chula.ac.th')
+  expect(resolveLoginEmail(' Admin@Example.com ')).toBe('admin@example.com')
+  expect(resolveLoginEmail('6638012321@Student.Chula.ac.th')).toBe('6638012321@student.chula.ac.th')
+  for (const bad of ['', '   ', '663801232', '66380123211', '66380123ab', 'napat', '66 38012321']) {
+    expect(resolveLoginEmail(bad)).toBeNull()
+  }
+  expect(MESSAGES.login).toBe('Enter your 10-digit student ID or your email.')
+  expect(chulaEmail('6638012321')).toBe('6638012321@student.chula.ac.th')
+})
+
+test('signup validates in order: name and ID, faculty, program, email, password', () => {
+  const form = {
+    fullName:' Napat ', studentId:' 6638012321 ', faculty:'Engineering', program:'ICE',
+    email:' Napat@Student.Chula.ac.th ', password:'12345678', customEmail:false,
+  }
   expect(validateSignUp(form)).toBe(null)
   expect(validateSignUp({ ...form, fullName:' ' })).toBe('Enter your full name and your 10-digit student ID.')
   expect(validateSignUp({ ...form, studentId:'123' })).toBe('Enter your full name and your 10-digit student ID.')
-  expect(validateSignUp({ ...form, email:'me@gmail.com' })).toBe(MESSAGES.email)
+  expect(validateSignUp({ ...form, fullName:'', faculty:'', program:'', email:'', password:'' })).toBe(MESSAGES.nameAndId)
+  expect(validateSignUp({ ...form, faculty:'', program:'', email:'', password:'' })).toBe('Choose your faculty.')
+  expect(validateSignUp({ ...form, program:'', email:'', password:'' })).toBe('Choose your program.')
+  expect(validateSignUp({ ...form, program:'ZZZ', email:'', password:'' })).toBe('Choose your program.')
+  expect(validateSignUp({ ...form, email:'me@gmail.com', password:'' })).toBe(MESSAGES.email)
   expect(validateSignUp({ ...form, password:'short' })).toBe('Your password needs at least 8 characters.')
-  expect(validateSignUp({ ...form, fullName:'', studentId:'', mode:'in' })).toBe(null)
-  expect(validateSignUp({ ...form, mode:'signup', fullName:'' })).toBe('Enter your full name and your 10-digit student ID.')
   expect(isChulaEmail('x@@student.chula.ac.th')).toBe(false)
   expect(isChulaEmail('x@student.chula.ac.th.evil.com')).toBe(false)
+})
+
+test('signup program rules depend on the faculty', () => {
+  const form = {
+    fullName:'Napat', studentId:'6638012321', faculty:'Engineering', program:'ISE',
+    email:'6638012321@student.chula.ac.th', password:'12345678', customEmail:false,
+  }
+  // Engineering must pick one of the 21 known codes; codes are exact-match.
+  expect(validateSignUp({ ...form, program:'ISE' })).toBe('Choose your program.')
+  expect(validateSignUp({ ...form, program:'ice' })).toBe('Choose your program.')
+  expect(validateSignUp({ ...form, program:'ChPE' })).toBe(null)
+  // Other faculties type any program text, but not blanks.
+  expect(validateSignUp({ ...form, faculty:'Law', program:'Business Law' })).toBe(null)
+  expect(validateSignUp({ ...form, faculty:'Law', program:'   ' })).toBe('Choose your program.')
+})
+
+test('signup email: derived Chula address, or any well-formed custom address the server may accept', () => {
+  const form = {
+    fullName:'Napat', studentId:'6638012321', faculty:'Engineering', program:'ICE',
+    email:'6638012321@student.chula.ac.th', password:'12345678', customEmail:false,
+  }
+  expect(validateSignUp({ ...form, email:'admin@example.com' })).toBe(MESSAGES.email)
+  expect(validateSignUp({ ...form, customEmail:true, email:'admin@example.com' })).toBe(null)
+  for (const bad of ['', 'admin', 'admin@', '@example.com', 'a b@example.com', 'admin@example']) {
+    expect(validateSignUp({ ...form, customEmail:true, email:bad })).toBe('Enter a valid email address.')
+  }
+  // The password rule still comes last.
+  expect(validateSignUp({ ...form, customEmail:true, email:'admin@example.com', password:'short' })).toBe(MESSAGES.password)
 })
 
 test('loan validation checks empty selection, per-item caps, availability and duplicate date', () => {
