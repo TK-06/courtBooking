@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import * as api from '../lib/api.js'
 import { buildHeatMap, statusOf } from '../lib/rules.js'
+import { ENGINEERING, programLabel } from '../lib/programs.js'
 import { fmtLong, fmtStamp as formatStamp, hh } from '../lib/format.js'
 import { useAuth } from '../composables/useAuth.js'
 import { useToast } from '../composables/useToast.js'
@@ -16,8 +17,12 @@ const loading = ref(true), error = ref(false)
 let clock, active = true
 const me = computed(() => ({ name:profile.value?.fullName || '', sid:profile.value?.studentId || '', ...profile.value }))
 const initials = name => name.split(' ').filter(Boolean).map(s => s[0]).slice(0,2).join('')
-const PROGRAMS = { ICE:'Information and Communication Engineering', ADME:'Automotive Design and Manufacturing Engineering', AERO:'Aerospace Engineering', NANO:'Nano-Engineering', ChPE:'Chemical and Process Engineering' }
-const programName = program => PROGRAMS[program] || program
+const subline = computed(() => {
+  const { role, program, faculty, year } = me.value
+  if (role === 'admin') return 'Club admin'
+  const where = faculty && faculty !== ENGINEERING ? [programLabel(program), faculty] : [programLabel(program)]
+  return [...where, 'year ' + year].join(', ')
+})
 const kindTail = kind => kind.split('.').at(-1)
 const fmtStamp = date => formatStamp(date, now.value)
 const stats = computed(() => {
@@ -53,7 +58,7 @@ onUnmounted(() => { active = false; clearInterval(clock) })
     <span class="avatar xl">{{ initials(me.name) }}</span>
     <div>
       <h1 class="display h-lg">{{ me.name }}</h1>
-      <p class="muted">{{ me.role==='admin' ? 'Club admin' : programName(me.program) + ', year ' + me.year }}</p>
+      <p class="muted">{{ subline }}</p>
       <p class="mono sm muted">{{ me.sid }}</p>
     </div>
   </div>

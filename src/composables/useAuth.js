@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import router from '../router.js'
 import { supabase } from '../lib/supabase.js'
 import { toMessage, toProfile } from '../lib/api.js'
+import { MESSAGES, resolveLoginEmail } from '../lib/rules.js'
 
 const session = ref(null)
 const profile = ref(null)
@@ -100,10 +101,14 @@ export function useAuth() {
   if (!ready) initialize()
   return {
     session, profile, isAdmin, mode, error, ready, setMode, signOut,
-    signIn:(email, password) => authenticate('signInWithPassword', { email:email.trim().toLowerCase(), password }),
-    signUp:({ fullName, studentId, program, year, email, password }) => authenticate('signUp', {
+    signIn:(login, password) => {
+      const email = resolveLoginEmail(login)
+      if (!email) return Promise.reject(new Error(MESSAGES.login))
+      return authenticate('signInWithPassword', { email, password })
+    },
+    signUp:({ fullName, studentId, faculty, program, year, email, password }) => authenticate('signUp', {
       email:email.trim().toLowerCase(), password,
-      options:{ data:{ full_name:fullName.trim(), student_id:studentId.trim(), program, year:Number(year) } },
+      options:{ data:{ full_name:fullName.trim(), student_id:studentId.trim(), faculty, program, year:Number(year) } },
     }),
   }
 }

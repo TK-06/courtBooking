@@ -40,7 +40,13 @@ test.each([
 test('maps loans, events, and nullable admin profiles', () => {
   expect(api.toLoan({ id:'l', user_id:'u', date:'2026-11-12', racket:1, balls:2, status:'reserved', created_at:booking.created_at })).toEqual({ id:'l', userId:'u', date:'2026-11-12', racket:1, balls:2, status:'reserved', createdAt:new Date(booking.created_at) })
   expect(api.toEvent({ id:1, booking_id:'x', loan_id:null, user_id:'u', kind:'booking.created', text:'Booked', source:'App', created_at:booking.created_at })).toEqual({ id:1, bookingId:'x', loanId:null, userId:'u', kind:'booking.created', text:'Booked', source:'App', createdAt:new Date(booking.created_at) })
-  expect(api.toProfile({ id:'a', full_name:'Admin', student_id:null, program:null, year:null, role:'admin' })).toEqual({ id:'a', fullName:'Admin', studentId:null, program:null, year:null, role:'admin' })
+  expect(api.toProfile({ id:'a', full_name:'Admin', student_id:null, program:null, year:null, role:'admin' })).toEqual({ id:'a', fullName:'Admin', studentId:null, faculty:null, program:null, year:null, role:'admin' })
+})
+test('toProfile maps faculty, and a row without one maps to null', () => {
+  const row = { id:'u', full_name:'Napat', student_id:'6638012321', faculty:'Engineering', program:'ICE', year:3, role:'student' }
+  expect(api.toProfile(row)).toEqual({ id:'u', fullName:'Napat', studentId:'6638012321', faculty:'Engineering', program:'ICE', year:3, role:'student' })
+  const { faculty, ...withoutFaculty } = row
+  expect(api.toProfile(withoutFaculty).faculty).toBeNull()
 })
 test('maps courts, closed days, equipment and RPC availability', async () => {
   fake.result.data = [{ id:1, name:'Court I', status:'open', note:'' }]

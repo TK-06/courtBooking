@@ -73,20 +73,38 @@ test('students cannot select admin mode', async () => {
   await auth.setMode('admin')
   expect(auth.mode.value).toBe('student')
 })
-test('sign-in normalizes any email domain', async () => {
+test('sign-in resolves a 10-digit student ID to the Chula email', async () => {
+  const auth = useAuth()
+  await auth.ready
+  await auth.signIn(' 6638012321 ', 'password')
+  expect(fake.auth.signInWithPassword).toHaveBeenCalledWith({ email:'6638012321@student.chula.ac.th', password:'password' })
+})
+test('sign-in passes any email through, trimmed and lowercased', async () => {
   const auth = useAuth()
   await auth.ready
   await auth.signIn(' Admin@Example.com ', 'password')
   expect(fake.auth.signInWithPassword).toHaveBeenCalledWith({ email:'admin@example.com', password:'password' })
 })
+test('sign-in rejects a login that is neither an ID nor an email without calling Supabase', async () => {
+  const auth = useAuth()
+  await auth.ready
+  await expect(auth.signIn('napat', 'password')).rejects.toThrow('Enter your 10-digit student ID or your email.')
+  expect(fake.auth.signInWithPassword).not.toHaveBeenCalled()
+})
 test('sign-up sends exact metadata and handles confirmation without a session', async () => {
   const auth = useAuth()
   await auth.ready
   fake.auth.signUp.mockResolvedValue({ data:{ session:null, user:{ id:'new' } }, error:null })
-  const result = await auth.signUp({ fullName:' Napat Srisuk ', studentId:' 6638012321 ', program:'ICE', year:'3', email:' NAPAT@Student.Chula.ac.th ', password:'password' })
-  expect(fake.auth.signUp).toHaveBeenCalledWith({ email:'napat@student.chula.ac.th', password:'password', options:{ data:{ full_name:'Napat Srisuk', student_id:'6638012321', program:'ICE', year:3 } } })
+  const result = await auth.signUp({ fullName:' Napat Srisuk ', studentId:' 6638012321 ', faculty:'Engineering', program:'ICE', year:'3', email:' NAPAT@Student.Chula.ac.th ', password:'password' })
+  expect(fake.auth.signUp).toHaveBeenCalledWith({ email:'napat@student.chula.ac.th', password:'password', options:{ data:{ full_name:'Napat Srisuk', student_id:'6638012321', faculty:'Engineering', program:'ICE', year:3 } } })
   expect(result.session).toBeNull()
   expect(auth.profile.value).toBeNull()
+})
+test('sign-up carries another faculty and a typed program', async () => {
+  const auth = useAuth()
+  await auth.ready
+  await auth.signUp({ fullName:'Napat', studentId:'6638012321', faculty:'Commerce and Accountancy', program:'Accounting', year:2, email:'6638012321@student.chula.ac.th', password:'password' })
+  expect(fake.auth.signUp.mock.calls.at(-1)[0].options.data).toEqual({ full_name:'Napat', student_id:'6638012321', faculty:'Commerce and Accountancy', program:'Accounting', year:2 })
 })
 test('auth events load profiles outside the callback and clear on sign-out', async () => {
   fake.auth.getSession.mockResolvedValue({ data:{ session:null }, error:null })

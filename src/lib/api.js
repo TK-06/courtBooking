@@ -22,7 +22,7 @@ export function toEvent(row) {
 
 export function toProfile(row) {
   return { id:row.id, fullName:row.full_name, studentId:row.student_id,
-    program:row.program, year:row.year, role:row.role }
+    faculty:row.faculty ?? null, program:row.program, year:row.year, role:row.role }
 }
 
 export function toMessage(error) {
