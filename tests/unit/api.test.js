@@ -62,8 +62,9 @@ test('maps courts, closed days, equipment and RPC availability', async () => {
 test('filters booking lists and maps rows', async () => {
   fake.result.data = [booking]
   expect(await api.fetchBookings({ from:'2026-11-10', to:'2026-11-24' })).toEqual([api.toBooking(booking)])
-  expect(fake.calls).toContainEqual(['gte', 'date', '2026-11-10'])
-  expect(fake.calls).toContainEqual(['lte', 'date', '2026-11-24'])
+  // Other members' bookings come through a masked RPC, never the raw table.
+  expect(fake.calls).toContainEqual(['rpc', 'court_bookings', { p_from:'2026-11-10', p_to:'2026-11-24' }])
+  expect(fake.calls).not.toContainEqual(['from', 'bookings'])
   await api.fetchMyBookings('u')
   expect(fake.calls).toContainEqual(['eq', 'user_id', 'u'])
 })

@@ -14,7 +14,7 @@ const evTabs=[{id:'all',label:'All'},{id:'booking',label:'Bookings'},{id:'loan',
 const sortedEvents=computed(()=>[...events.value].sort((a,b)=>b.createdAt-a.createdAt))
 const memberRows=computed(()=> {
   const q=mSearch.value.trim().toLowerCase()
-  return profiles.value.filter(m=>m.role==='student'&&(!q||m.fullName.toLowerCase().includes(q)||(m.studentId||'').includes(q))).map(m=>{
+  return profiles.value.filter(m=>m.role!=='admin'&&(!q||m.fullName.toLowerCase().includes(q)||(m.studentId||'').includes(q))).map(m=>{
     const last=sortedEvents.value.find(e=>e.userId===m.id)
     return {...m,bookings:bookings.value.filter(b=>b.userId===m.id&&b.status!=='cancelled').length,last:last?relative(last.createdAt,now.value):'No activity'}
   })
@@ -62,7 +62,7 @@ onBeforeUnmount(()=>{disposed=true;clearInterval(clock);unsubscribe?.()})
         <li><button class="mrow all" :class="{on: !memberFilter}" @click="memberFilter=null"><span>All members</span><span class="muted sm">{{ events.length }} actions</span></button></li>
         <li v-for="m in memberRows" :key="m.id"><button class="mrow" :class="{on: memberFilter===m.id}" @click="memberFilter=m.id">
           <span class="avatar sm">{{ initials(m.fullName) }}</span>
-          <span class="mr-info"><strong>{{ m.fullName }}</strong><span class="muted sm">{{ m.studentId }}, {{ m.program }}</span></span>
+          <span class="mr-info"><strong>{{ m.fullName }}</strong><span class="muted sm">{{ m.role==='guest' ? 'Guest' : m.studentId + ', ' + m.program }}</span></span>
           <span class="mr-stats"><span>{{ m.bookings }} bookings</span><span class="muted sm">{{ m.last }}</span></span>
         </button></li>
       </ul>

@@ -148,3 +148,11 @@ test.each([AdminToday,AdminEquipment])('today-based admin data follows Bangkok m
   w.unmount(); wrappers=[]
   expect(vi.getTimerCount()).toBe(0)
 })
+test('Members lists guests too, labelled as guests, and never admins',async()=>{
+  api.fetchProfiles.mockResolvedValue([student,{id:'g',fullName:'Jane Recruiter',studentId:null,program:null,role:'guest'},{id:'a',fullName:'Club Admin',role:'admin'}])
+  const {w}=await render(AdminMembers)
+  const rows=w.findAll('.mrow:not(.all)')
+  expect(rows.map(r=>r.find('strong').text())).toEqual(['Napat Srisuk','Jane Recruiter'])
+  expect(rows[1].text()).toContain('Guest')
+  expect(rows[1].text()).not.toContain('null')
+})

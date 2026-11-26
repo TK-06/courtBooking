@@ -2,16 +2,18 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth.js'
-import { MESSAGES, chulaEmail, resolveLoginEmail, validateSignUp } from '../lib/rules.js'
+import { MESSAGES, chulaEmail, resolveLoginEmail, validateGuestSignUp, validateSignUp } from '../lib/rules.js'
 import { ENGINEERING, OTHER_FACULTIES } from '../lib/programs.js'
 import ClubLogo from '../components/ClubLogo.vue'
 import CourtArt from '../components/CourtArt.vue'
 import ProgramPicker from '../components/ProgramPicker.vue'
 import '../styles/signin.css'
 const router = useRouter()
-const { signIn, signUp, error:authError } = useAuth()
+const { signIn, signUp, signUpGuest, tryDemo, error:authError } = useAuth()
 const authTab = ref('in')
-const form = reactive({ login:'', name:'', sid:'', faculty:ENGINEERING, program:'', year:1, email:'', pass:'' })
+// Who is creating an account: a Chula student, or a guest with any email.
+const kind = ref('student')
+const form = reactive({ login:'', name:'', sid:'', faculty:ENGINEERING, program:'', year:1, email:'', guestEmail:'', pass:'' })
 const customEmail = ref(false)
 const showPass = ref(false)
 const formErr = ref('')
@@ -27,14 +29,23 @@ watch(() => form.faculty, () => { form.program = '' })
 function setTab(tab) {
   authTab.value = tab
   formErr.value = ''
+  notice.value = ''
   showPass.value = false
+}
+function setKind(next) {
+  kind.value = next
+  formErr.value = ''
+  notice.value = ''
 }
 async function submit() {
   if (busy.value) return
   formErr.value = ''
   notice.value = ''
   const signingUp = authTab.value === 'up'
-  if (signingUp) {
+  const guest = signingUp && kind.value === 'guest'
+  if (guest) {
+    formErr.value = validateGuestSignUp({ fullName:form.name, email:form.guestEmail, password:form.pass }) || ''
+  } else if (signingUp) {
     formErr.value = validateSignUp({
       fullName:form.name, studentId:form.sid, faculty:form.faculty, program:form.program,
       email:signUpEmail.value, password:form.pass, customEmail:customEmail.value,
@@ -44,13 +55,26 @@ async function submit() {
   if (formErr.value) return
   busy.value = true
   try {
-    const data = signingUp
+    const data = guest
+      ? await signUpGuest({ fullName:form.name, email:form.guestEmail, password:form.pass })
+      : signingUp
       ? await signUp({ fullName:form.name, studentId:form.sid, faculty:form.faculty, program:form.program.trim(), year:form.year, email:signUpEmail.value, password:form.pass })
       : await signIn(form.login, form.pass)
     if (!data.session) {
       notice.value = 'Check your email to confirm your account, then sign in.'
       return
     }
+    await router.replace({ name:'home' })
+  } catch (error) { formErr.value = error.message }
+  finally { busy.value = false }
+}
+async function demo() {
+  if (busy.value) return
+  formErr.value = ''
+  notice.value = ''
+  busy.value = true
+  try {
+    await tryDemo()
     await router.replace({ name:'home' })
   } catch (error) { formErr.value = error.message }
   finally { busy.value = false }
@@ -86,14 +110,27 @@ async function submit() {
       <form class="form" novalidate :aria-busy="busy" @submit.prevent="submit">
         <template v-if="authTab==='in'">
           <div class="field">
-            <label for="f-login">Student ID or Chula email</label>
+            <label for="f-login">Student ID or email</label>
             <input id="f-login" v-model="form.login" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="6638012321">
-            <p class="si-help">Your 10-digit ID is enough. Club admins sign in with their email.</p>
+            <p class="si-help">Chula students can use their 10-digit ID. Guests and club admins use their email.</p>
             <p v-if="loginId" class="chip ok si-chip">Signing in as {{ chulaEmail(loginId) }}</p>
           </div>
         </template>
         <template v-else>
+          <div class="seg full si-kind" role="group" aria-label="Account type">
+            <button type="button" :disabled="busy" :aria-pressed="kind==='student'" :class="{on: kind==='student'}" @click="setKind('student')">Chula student</button>
+            <button type="button" :disabled="busy" :aria-pressed="kind==='guest'" :class="{on: kind==='guest'}" @click="setKind('guest')">Guest</button>
+          </div>
           <div class="field"><label for="f-name">Full name</label><input id="f-name" v-model="form.name" autocomplete="name" placeholder="Napat Srisuk"></div>
+        </template>
+        <template v-if="authTab==='up' && kind==='guest'">
+          <div class="field">
+            <label for="f-gemail">Email</label>
+            <input id="f-gemail" v-model="form.guestEmail" type="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="name@example.com">
+            <p class="si-help">Any email works. Guests can book 1 hour a week.</p>
+          </div>
+        </template>
+        <template v-else-if="authTab==='up'">
           <div class="field"><label for="f-sid">Student ID</label><input id="f-sid" v-model="form.sid" class="mono-input" inputmode="numeric" maxlength="10" autocomplete="off" placeholder="6638012321"></div>
           <div class="field">
             <label for="f-faculty">Faculty</label>
@@ -120,7 +157,7 @@ async function submit() {
           <div v-else class="field">
             <label for="f-email">Email</label>
             <input id="f-email" v-model="form.email" type="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="name@example.com">
-            <p class="si-help">Only club admins can use an address that does not end in @student.chula.ac.th. <button type="button" class="linkbtn" @click="customEmail = false">Use my Chula email</button></p>
+            <p class="si-help">Only club admins can use an address that does not end in @student.chula.ac.th. Not a Chula student? Choose Guest above. <button type="button" class="linkbtn" @click="customEmail = false">Use my Chula email</button></p>
           </div>
         </template>
         <div class="field">
@@ -130,12 +167,16 @@ async function submit() {
             <button type="button" class="pw-toggle" :aria-pressed="showPass" aria-controls="f-pass" @click="showPass = !showPass">{{ showPass ? 'Hide' : 'Show' }}</button>
           </div>
         </div>
-        <p v-if="authTab==='up'" class="note">By creating an account you agree to the court rules: up to 2 hours a day, cancel at least 2 hours before, bring your own equipment and tidy up after.</p>
+        <p v-if="authTab==='up'" class="note">By creating an account you agree to the court rules: {{ kind==='guest' ? '1 hour a week for guests' : 'up to 2 hours a day' }}, cancel at least 2 hours before, bring your own equipment and tidy up after.</p>
         <p v-if="formErr" class="err" role="alert">{{ formErr }}</p>
         <button class="btn primary block si-submit" type="submit" :disabled="busy" :aria-busy="busy">{{ authTab==='in' ? 'Sign in' : 'Create account' }}</button>
       </form>
       <template v-if="authTab==='in'">
         <p class="si-switch">New here? <button type="button" class="linkbtn" @click="setTab('up')">Create an account</button></p>
+        <div class="si-demo">
+          <p>Just looking? Try it without an account.</p>
+          <button type="button" class="btn ghost block" :disabled="busy" @click="demo">Try the demo</button>
+        </div>
         <div class="si-legal">
           <p>2 courts · up to 2 hours a day · book 14 days ahead</p>
           <p class="si-note">Student project for an ISE course assignment.</p>

@@ -95,7 +95,7 @@ async function confirmCancel({ reason }) {
           </div>
           <dl class="dl" style="border-top:1px solid var(--rule);padding-top:16px">
             <div v-if="booking.purpose" class="wide"><dt class="label">Booked by</dt><dd>The club</dd></div>
-            <template v-else><div><dt class="label">Player</dt><dd>{{ member.fullName }}</dd></div><div><dt class="label">Student ID</dt><dd class="mono">{{ member.studentId }}</dd></div></template>
+            <template v-else><div><dt class="label">Player</dt><dd>{{ member.fullName }}</dd></div><div v-if="member.studentId"><dt class="label">Student ID</dt><dd class="mono">{{ member.studentId }}</dd></div><div v-else-if="member.role==='guest'"><dt class="label">Account</dt><dd>Guest</dd></div></template>
             <div><dt class="label">Booked</dt><dd>{{ fmtStamp(booking.createdAt, now) }}</dd></div>
             <div v-if="booking.status==='cancelled'"><dt class="label">{{ booking.cancelledBy==='club' ? 'Cancelled by the club' : 'Reason' }}</dt><dd>{{ booking.cancelReason || 'None given' }}</dd></div>
             <div v-if="booking.status==='cancelled' && booking.cancelNote" class="wide"><dt class="label">Message from the club</dt><dd style="font-weight:400">{{ booking.cancelNote }}</dd></div>

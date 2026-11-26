@@ -9,6 +9,8 @@ const profile = ref(null)
 const mode = ref('student')
 const error = ref('')
 const isAdmin = computed(() => profile.value?.role === 'admin')
+const isGuest = computed(() => profile.value?.role === 'guest')
+const DEMO_OFF = 'The demo is switched off right now. Create a guest account instead.'
 let ready
 let revision = 0
 let pending = Promise.resolve()
@@ -100,7 +102,13 @@ async function signOut() {
 export function useAuth() {
   if (!ready) initialize()
   return {
-    session, profile, isAdmin, mode, error, ready, setMode, signOut,
+    session, profile, isAdmin, isGuest, mode, error, ready, setMode, signOut,
+    // One click for visitors: a throwaway anonymous account that the database makes a guest.
+    tryDemo:() => authenticate('signInAnonymously', { options:{ data:{ full_name:'Demo guest' } } })
+      .catch(cause => { throw /anonymous/i.test(cause.message) ? new Error(DEMO_OFF) : cause }),
+    signUpGuest:({ fullName, email, password }) => authenticate('signUp', {
+      email:email.trim().toLowerCase(), password, options:{ data:{ full_name:fullName.trim() } },
+    }),
     signIn:(login, password) => {
       const email = resolveLoginEmail(login)
       if (!email) return Promise.reject(new Error(MESSAGES.login))

@@ -40,7 +40,7 @@ function select(slot) {
       </div>
     </div>
     <div class="s2-times">
-      <div class="row-between"><h2 class="label">Hours on {{ courtName }}</h2><p class="hint">{{ admin ? 'Any number of hours, back to back' : 'Up to 2 hours a day, back to back' }}</p></div>
+      <div class="row-between"><h2 class="label">Hours on {{ courtName }}</h2><p class="hint">{{ admin ? 'Any number of hours, back to back' : role === 'guest' ? 'Guests can book 1 hour a week' : 'Up to 2 hours a day, back to back' }}</p></div>
       <div class="legend left"><span><i class="lg sq"></i>Open</span><span><i class="lg sq lg-sel"></i>Selected</span><span><i class="lg sq lg-booked"></i>Booked or past</span><span v-if="!admin"><i class="lg sq lg-mine"></i>Yours</span></div>
       <div class="slots">
         <button v-for="s in slots" :key="s.h" class="slot" :class="['s-' + s.state, { held:blocked && blocked.h===s.h, tap:admin && (s.state==='booked' || s.state==='mine') }]" :aria-pressed="s.state==='selected'" :aria-label="hh(s.h) + ' to ' + hh(s.h + 1) + ', ' + slotLabel(s)" @click="select(s)">

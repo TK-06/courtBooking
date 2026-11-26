@@ -46,6 +46,8 @@
 
 .si-submit{min-height:52px}
 .si-switch{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:0 6px;font-size:14px;color:var(--ink-2)}
+.si-kind{margin-bottom:4px}
+.si-demo{display:flex;flex-direction:column;gap:8px;padding:14px;border:1px dashed var(--rule-strong);border-radius:var(--r-m);background:var(--sunk);text-align:center;font-size:14px;color:var(--ink-2)}
 .si-legal{display:flex;flex-direction:column;gap:4px;padding-top:14px;border-top:1px solid var(--rule);font-size:12px;color:var(--ink-3);text-align:center}
 
 @media (min-width:900px){

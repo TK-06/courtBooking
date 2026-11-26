@@ -13,7 +13,7 @@ const gradientId = 'ig-grad-' + getCurrentInstance().uid
 const links = { map:'https://maps.app.goo.gl/4LWxM2rodPUCLwEK8', ig:'https://www.instagram.com/intaniatennisclub/' }
 const rules = [
   {t:'Open every day, 08:00 to 22:00', d:'Courts are booked by the hour. The last hour starts at 21:00.'},
-  {t:'Up to 2 hours a day', d:'Two hours on the same day have to be back to back. You can book 14 days ahead.'},
+  {t:'Up to 2 hours a day', d:'Two hours on the same day have to be back to back. You can book 14 days ahead. Guests can book 1 hour a week.'},
   {t:'Please bring your own equipment', d:'No racket? Borrow one, and a can of balls, for the day.'},
   {t:'Tidy up after your session', d:'Take balls, bottles and towels with you so the court is ready for the next players.'},
   {t:'Cancel at least 2 hours before', d:'That gives someone else time to take the hour.'},

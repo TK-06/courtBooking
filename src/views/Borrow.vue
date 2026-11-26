@@ -12,6 +12,8 @@ import BallsArt from '../components/BallsArt.vue'
 import LoadState from '../components/LoadState.vue'
 
 const { profile, ready } = useAuth()
+// Equipment is for Chula students; guests (and the demo) only read how it works.
+const guest = computed(() => profile.value?.role === 'guest')
 const { show } = useToast()
 const now = ref(new Date())
 const today = computed(() => todayIso(now.value))
@@ -93,6 +95,7 @@ onUnmounted(() => { active = false; clearInterval(clock); availabilityRevision++
 <section class="screen">
   <div class="page-head"><div><h1 class="display h-lg">Borrow a racket or balls</h1><p class="lede">One day at a time. Pick up from the court attendant and return everything by 22:00 the same day.</p></div></div>
   <LoadState :state="loading ? 'loading' : loadError ? 'error' : 'ready'" message="Couldn't load equipment. Check your connection and try again." @retry="load">
+  <p v-if="guest" class="demo-note" role="note">{{ MESSAGES.loanGuest }} You can still see how many rackets and balls are free.</p>
   <div class="borrow-grid">
     <div class="borrow-col">
       <h2 class="label">Day</h2>
@@ -117,7 +120,7 @@ onUnmounted(() => { active = false; clearInterval(clock); availabilityRevision++
       </div>
       </LoadState>
       <p v-if="loanErr" class="err" role="alert">{{ loanErr }}</p>
-      <button class="btn primary block" :disabled="availabilityLoading || availabilityError || !equipment.length || saving" @click="reserveLoan">Reserve for {{ fmtDate(loanDraft.date) }}</button>
+      <button v-if="!guest" class="btn primary block" :disabled="availabilityLoading || availabilityError || !equipment.length || saving" @click="reserveLoan">Reserve for {{ fmtDate(loanDraft.date) }}</button>
     </div>
     <div class="borrow-col">
       <h2 class="display h-md">Your loans</h2>
