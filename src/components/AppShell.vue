@@ -50,7 +50,7 @@ async function logout() {
     </nav>
     <div class="side-foot">
       <button v-if="isAdmin" class="nav-switch" @click="switchMode()"><icon name="shield"></icon>{{ mode==='admin' ? 'Switch to student view' : 'Open admin' }}</button>
-      <div class="side-user"><span class="avatar sm">{{ initials(profile?.fullName || '') }}</span><div style="min-width:0"><strong>{{ profile?.fullName || '' }}</strong><span>{{ profile?.role==='admin' ? 'Club admin' : profile?.program + ', year ' + profile?.year }}</span></div></div>
+      <div class="side-user"><span class="avatar sm">{{ initials(profile?.fullName || '') }}</span><div style="min-width:0"><strong>{{ profile?.fullName || '' }}</strong><span>{{ profile?.role==='admin' ? 'Club admin' : profile?.role==='guest' ? 'Guest · 1 hour a week' : profile?.program + ', year ' + profile?.year }}</span></div></div>
       <button class="linkbtn" @click="logout()">Sign out</button>
       <p class="side-note">Student project for an ISE course assignment.</p>
     </div>

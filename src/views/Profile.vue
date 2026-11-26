@@ -20,6 +20,7 @@ const initials = name => name.split(' ').filter(Boolean).map(s => s[0]).slice(0,
 const subline = computed(() => {
   const { role, program, faculty, year } = me.value
   if (role === 'admin') return 'Club admin'
+  if (role === 'guest') return 'Guest · 1 hour a week'
   const where = faculty && faculty !== ENGINEERING ? [programLabel(program), faculty] : [programLabel(program)]
   return [...where, 'year ' + year].join(', ')
 })

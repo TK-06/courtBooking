@@ -55,7 +55,9 @@ export async function fetchEquipment() {
 }
 
 export async function fetchBookings({ from, to }) {
-  return (await request(supabase.from('bookings').select('*').gte('date', from).lte('date', to)
+  // court_bookings masks other members' rows (no user, code or cancel notes) unless the
+  // caller is an admin; the bookings table itself only shows your own rows.
+  return (await request(supabase.rpc('court_bookings', { p_from:from, p_to:to })
     .order('date').order('start_hour'))).map(toBooking)
 }
 

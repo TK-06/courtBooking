@@ -7,6 +7,7 @@ export const HOURS = Object.freeze(Array.from({ length:CLOSE_HOUR - 8 }, (_, i) 
 export const STUDENT_WINDOW_DAYS = 14
 export const ADMIN_WINDOW_DAYS = 90
 export const STUDENT_MAX_HOURS = 2
+export const GUEST_WEEK_HOURS = 1
 export const CANCEL_CUTOFF_HOURS = 2
 export const LOAN_AHEAD_DAYS = 6
 export const HEAT_WEEKS = 12
@@ -40,6 +41,11 @@ export const MESSAGES = Object.freeze({
   faculty: 'Choose your faculty.',
   program: 'Choose your program.',
   emailFormat: 'Enter a valid email address.',
+  guestWeek: 'Guests can book 1 hour a week.',
+  guestName: 'Enter your name.',
+  guestChula: 'Chula students: choose Chula student above.',
+  demoBook: 'The demo can look around but not book. Create a free guest account to book 1 hour a week.',
+  loanGuest: 'Equipment loans are for Chula students.',
 })
 
 export function msg(key, vars = {}) {
@@ -102,11 +108,21 @@ export function toggleSlot({ slots, hour, state, role, hoursUsed }) {
   }
 
   if (index !== -1) return result(next.filter(h => h !== hour))
-  const cap = STUDENT_MAX_HOURS - hoursUsed
-  if (cap <= 0 || next.length >= cap) return result(next, msg('maxHours'))
+  const guest = role === 'guest'
+  const cap = (guest ? GUEST_WEEK_HOURS : STUDENT_MAX_HOURS) - hoursUsed
+  if (cap <= 0 || next.length >= cap) return result(next, msg(guest ? 'guestWeek' : 'maxHours'))
   if (!next.length) return result([hour])
   if (Math.abs(next[0] - hour) === 1) return result([...next, hour].sort((a, b) => a - b))
   return result([hour])
+}
+
+// Hours a member already holds in the Monday-to-Sunday week that contains date.
+export function weekHoursUsed({ bookings, userId, date }) {
+  const monday = mondayOf(date)
+  const sunday = addDays(monday, 6)
+  return bookings
+    .filter(b => b.userId === userId && b.status !== 'cancelled' && b.date >= monday && b.date <= sunday)
+    .reduce((sum, b) => sum + b.end - b.start, 0)
 }
 
 export function statusOf(booking, now) {
@@ -155,7 +171,8 @@ const text = value => String(value ?? '').trim()
 
 // Returns the first failing message, or null. With customEmail the address only has to look
 // like an email: the server still decides whether a non-Chula address is allowed (club admins
-// are on an allowlist; everyone else gets MESSAGES.email from the sign-up trigger).
+// are on an allowlist; a student-form sign-up from anyone else gets MESSAGES.email from the
+// sign-up trigger, and non-students use the guest form instead).
 export function validateSignUp({ fullName, studentId, faculty, program, email, password, customEmail }) {
   if (!text(fullName) || !/^\d{10}$/.test(text(studentId))) return msg('nameAndId')
   if (!text(faculty)) return msg('faculty')
@@ -163,6 +180,16 @@ export function validateSignUp({ fullName, studentId, faculty, program, email, p
   if (customEmail) {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(text(email))) return msg('emailFormat')
   } else if (!isChulaEmail(text(email))) return msg('email')
+  if (String(password ?? '').length < 8) return msg('password')
+  return null
+}
+
+// Guests (anyone outside Chula) give a name, any email and a password.
+export function validateGuestSignUp({ fullName, email, password }) {
+  if (!text(fullName)) return msg('guestName')
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(text(email))) return msg('emailFormat')
+  // A Chula address would make a student with no student ID, so send them to that form.
+  if (isChulaEmail(text(email))) return msg('guestChula')
   if (String(password ?? '').length < 8) return msg('password')
   return null
 }

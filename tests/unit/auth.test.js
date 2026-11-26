@@ -153,3 +153,25 @@ test('stale profile response cannot restore a signed-out user', async () => {
   expect(auth.session.value).toBeNull()
   expect(auth.profile.value).toBeNull()
 })
+test('guest sign-up sends only the name, lowercased email and password', async () => {
+  const auth = useAuth()
+  await auth.ready
+  await auth.signUpGuest({ fullName:' Jane Recruiter ', email:' Jane@Company.com ', password:'password' })
+  expect(fake.auth.signUp).toHaveBeenLastCalledWith({ email:'jane@company.com', password:'password', options:{ data:{ full_name:'Jane Recruiter' } } })
+})
+test('the demo signs in anonymously as a named guest and loads its profile', async () => {
+  fake.auth.signInAnonymously = vi.fn(async () => ({ data:{ session }, error:null }))
+  fake.profile = { ...student, full_name:'Demo guest', student_id:null, program:null, year:null, role:'guest' }
+  const auth = useAuth()
+  await auth.ready
+  await auth.tryDemo()
+  expect(fake.auth.signInAnonymously).toHaveBeenCalledWith({ options:{ data:{ full_name:'Demo guest' } } })
+  expect(auth.isGuest.value).toBe(true)
+  expect(auth.isAdmin.value).toBe(false)
+})
+test('a disabled demo reports a readable error', async () => {
+  fake.auth.signInAnonymously = vi.fn(async () => ({ data:{}, error:{ message:'Anonymous sign-ins are disabled' } }))
+  const auth = useAuth()
+  await auth.ready
+  await expect(auth.tryDemo()).rejects.toThrow('The demo is switched off right now. Create a guest account instead.')
+})

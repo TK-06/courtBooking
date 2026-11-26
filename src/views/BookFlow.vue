@@ -4,8 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth.js'
 import { useToast } from '../composables/useToast.js'
 import { createBooking, fetchBookings, fetchClosedDays, fetchCourts, fetchProfiles } from '../lib/api.js'
-import { HOURS, MESSAGES, isFree, slotState, toggleSlot, windowEnd } from '../lib/rules.js'
-import { todayIso } from '../lib/time.js'
+import { GUEST_WEEK_HOURS, HOURS, MESSAGES, isFree, slotState, toggleSlot, weekHoursUsed, windowEnd } from '../lib/rules.js'
+import { mondayOf, todayIso } from '../lib/time.js'
 import { fmtDate, fmtLong, hh, hoursText } from '../lib/format.js'
 import Icon from '../components/Icon.vue'
 import LoadState from '../components/LoadState.vue'
@@ -18,8 +18,11 @@ const route = useRoute()
 const router = useRouter()
 const { profile, session, mode, isAdmin } = useAuth()
 const { show } = useToast()
-const role = computed(() => mode.value === 'admin' && isAdmin.value ? 'admin' : 'student')
+const role = computed(() => mode.value === 'admin' && isAdmin.value ? 'admin'
+  : profile.value?.role === 'guest' ? 'guest' : 'student')
 const userId = computed(() => session.value?.user.id || profile.value?.id)
+// The one-click demo (an anonymous sign-in) can walk through every step but not book.
+const isDemo = computed(() => !!session.value?.user?.is_anonymous)
 const now = ref(new Date())
 const today = computed(() => todayIso(now.value))
 const step = ref(1)
@@ -52,7 +55,8 @@ async function load() {
   lastBooking.value = null
   try {
     const [cs, ds, bs, ps] = await Promise.all([
-      fetchCourts(), fetchClosedDays(), fetchBookings({ from:today.value, to:windowEnd(today.value, role.value) }),
+      // Guests' weekly hour counts earlier days of this week too, so load from Monday.
+      fetchCourts(), fetchClosedDays(), fetchBookings({ from:role.value === 'guest' ? mondayOf(today.value) : today.value, to:windowEnd(today.value, role.value) }),
       role.value === 'admin' ? fetchProfiles() : Promise.resolve([]),
     ])
     if (current !== revision) return
@@ -74,7 +78,9 @@ const slots = computed(() => HOURS.map(hour => ({
   b:bookings.value.find(b => b.date === draft.date && b.courtId === draft.courtId && b.status !== 'cancelled' && hour >= b.start && hour < b.end),
 })))
 const ownOnDate = computed(() => bookings.value.filter(b => b.date === draft.date && b.userId === userId.value && b.status !== 'cancelled'))
-const hoursUsed = computed(() => ownOnDate.value.reduce((sum, b) => sum + b.end - b.start, 0))
+const hoursUsed = computed(() => role.value === 'guest'
+  ? weekHoursUsed({ bookings:bookings.value, userId:userId.value, date:draft.date })
+  : ownOnDate.value.reduce((sum, b) => sum + b.end - b.start, 0))
 function pickDate(date) {
   if (busy.value || date === draft.date) return
   draft.date = date; draft.slots = []
@@ -96,6 +102,7 @@ function pickSlot(slot) {
 }
 function validateSelection() {
   if (!draft.slots.length) return 'Pick at least one hour.'
+  if (role.value === 'guest' && hoursUsed.value + draft.slots.length > GUEST_WEEK_HOURS) return MESSAGES.guestWeek
   if (role.value === 'student') {
     if (hoursUsed.value + draft.slots.length > 2) return MESSAGES.maxHours
     const hours = [...draft.slots, ...ownOnDate.value.flatMap(b => Array.from({ length:b.end-b.start }, (_, i) => b.start+i))].sort((a,b) => a-b)
@@ -116,7 +123,8 @@ async function refreshDate() {
   } finally { if (current === revision) loading.value = false }
 }
 async function confirm() {
-  if (role.value === 'student' && !draft.agree) { agreeError.value = true; return }
+  if (role.value !== 'admin' && !draft.agree) { agreeError.value = true; return }
+  if (isDemo.value) { show(MESSAGES.demoBook); return }
   now.value = new Date()
   const error = validateSelection()
   if (error) {
@@ -173,7 +181,7 @@ const title = computed(() => step.value === 1 ? 'Choose a date' : step.value ===
       <p v-if="!courts.length" class="empty">No courts available.</p>
       <StepDate v-else-if="step===1" :date="draft.date" :role="role" :now="now" :courts="courts" :closed-days="closedDays" :bookings="bookings" @select="pickDate" @message="show" />
       <StepSlots v-if="step===2" :slots="slots" :role="role" :court-id="draft.courtId" :courts="courts" :profiles="profiles" :open-counts="openCounts" @select="pickSlot" @court="pickCourt" @open-bookings="openInBookings" />
-      <StepReview v-if="step===3" :booking="selected" :profile="profile || {}" :role="role" :agree="draft.agree" :purpose="draft.purpose" :agree-error="agreeError" :purpose-error="purposeError" @update:agree="draft.agree=$event; agreeError=false" @update:purpose="draft.purpose=$event; purposeError=false" />
+      <StepReview v-if="step===3" :booking="selected" :profile="profile || {}" :role="role" :demo="isDemo" :agree="draft.agree" :purpose="draft.purpose" :agree-error="agreeError" :purpose-error="purposeError" @update:agree="draft.agree=$event; agreeError=false" @update:purpose="draft.purpose=$event; purposeError=false" />
       <StepDone v-if="step===4 && lastBooking" :booking="lastBooking" :first-name="(profile?.fullName || '').split(' ')[0]" :role="role" @open="openBooking" @home="router.push({ name:role==='admin' ? 'admin-bookings' : 'home' })" />
     </LoadState>
     <div v-if="step<4 && !loading && !loadError && courts.length" class="flow-bar"><div class="fb-inner">

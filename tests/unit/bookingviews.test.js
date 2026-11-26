@@ -181,3 +181,11 @@ test('live inserts received during initial history fetch are retained', async ()
   await flushPromises()
   expect(w.get('.tl-text').text()).toBe('New live entry')
 })
+test('a guest booking shows the player as a guest, with no empty student ID row', async () => {
+  fake.auth.profile.value = { id:'u1', fullName:'Jane Recruiter', studentId:null, role:'guest' }
+  const w = render(BookingDetail)
+  await flushPromises()
+  expect(w.text()).toContain('Jane Recruiter')
+  expect(w.text()).not.toContain('Student ID')
+  expect(w.text()).toContain('Guest')
+})

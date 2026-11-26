@@ -487,3 +487,6 @@ button:disabled{cursor:default;opacity:.55}
 /* Shared loading and retry states stay readable on narrow screens. */
 .load-state{min-width:0;max-width:100%;margin:16px 0;overflow-wrap:anywhere}
 .load-state .btn{min-height:44px;max-width:100%;margin-top:12px;white-space:normal}
+
+/* Guest and demo notes: what this account can and cannot do. */
+.demo-note{margin:0 0 14px;padding:12px 14px;border-radius:var(--r-m);background:var(--sunk);border:1px dashed var(--rule-strong);color:var(--ink-2);font-size:14px}
